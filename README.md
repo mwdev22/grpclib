@@ -8,7 +8,7 @@ Key features:
 - Register generated gRPC services via a small helper.
 - Start and gracefully stop the server with a timeout.
 
-Quick example:
+quick example:
 
 ```go
 srv := grpclib.NewServer(grpclib.WithAddr(":8080"))
@@ -19,5 +19,3 @@ addr, _ := srv.Start(context.Background())
 // ...
 srv.Stop(context.Background())
 ```
-
-See `pkg/grpclib` for the implementation and tests.
