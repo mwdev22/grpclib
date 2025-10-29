@@ -1,4 +1,4 @@
-package grpclib
+package grpcserver
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	opt "github.com/mwdev22/grpclib/opts"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -17,7 +18,7 @@ import (
 type Server struct {
 	grpcServer *grpc.Server
 	lis        net.Listener
-	opts       Options
+	opts       opt.Options
 
 	mu sync.Mutex
 	// registration functions to call before Serve
@@ -25,11 +26,12 @@ type Server struct {
 }
 
 // constructs a Server with provided options
-func NewServer(opts ...Option) *Server {
-	o := Options{
-		Addr:            ":0",
-		ShutdownTimeout: 5 * time.Second,
+func NewServer(addr string, opts ...opt.Option) *Server {
+
+	o := opt.Options{
+		Addr: ":0",
 	}
+
 	for _, fn := range opts {
 		fn(&o)
 	}
@@ -43,9 +45,8 @@ func NewServer(opts ...Option) *Server {
 		grpcOpts = append(grpcOpts, grpc.ChainStreamInterceptor(o.StreamInterceptors...))
 	}
 
-	// if TLS provided, use it; otherwise use insecure (no creds) which is default for server
-	if o.TLS != nil {
-		grpcOpts = append(grpcOpts, grpc.Creds(o.TLS))
+	if o.Creds != nil {
+		grpcOpts = append(grpcOpts, grpc.Creds(o.Creds))
 	}
 
 	s := &Server{
@@ -61,7 +62,7 @@ func NewServer(opts ...Option) *Server {
 }
 
 // registers a function that receives the underlying *grpc.Server and performs generated registration.
-// example: s.RegisterService(func(gs *grpc.Server) { pb.RegisteyServiceServer(gs, impl) })
+// example: s.RegisterService(func(gs *grpc.Server) { svc.RegistryService(gs, impl) })
 func (s *Server) RegisterService(fn func(*grpc.Server)) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -124,8 +125,8 @@ func (s *Server) DialOptionForClient() (grpc.DialOption, error) {
 	if s == nil {
 		return nil, errors.New("server is nil")
 	}
-	if s.opts.TLS != nil {
-		return grpc.WithTransportCredentials(s.opts.TLS), nil
+	if s.opts.Creds != nil {
+		return grpc.WithTransportCredentials(s.opts.Creds), nil
 	}
 	return grpc.WithTransportCredentials(insecure.NewCredentials()), nil
 }

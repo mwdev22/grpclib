@@ -1,4 +1,4 @@
-package grpclib
+package opt
 
 import (
 	"time"
@@ -10,10 +10,9 @@ import (
 type Option func(*Options)
 
 type Options struct {
-	Addr string // listen address, default ":0"
+	Addr string
 
-	// if nil, server will use insecure.
-	TLS credentials.TransportCredentials
+	Creds credentials.TransportCredentials
 
 	UnaryInterceptors  []grpc.UnaryServerInterceptor
 	StreamInterceptors []grpc.StreamServerInterceptor
@@ -24,13 +23,9 @@ type Options struct {
 	EnableReflection bool
 }
 
-func WithAddr(addr string) Option {
-	return func(o *Options) { o.Addr = addr }
-}
-
 // sets transport credentials.
-func WithTLS(creds credentials.TransportCredentials) Option {
-	return func(o *Options) { o.TLS = creds }
+func WithCreds(creds credentials.TransportCredentials) Option {
+	return func(o *Options) { o.Creds = creds }
 }
 
 // appends unary interceptors

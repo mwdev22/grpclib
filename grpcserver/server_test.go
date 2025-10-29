@@ -1,17 +1,18 @@
-package grpclib
+package grpcserver
 
 import (
 	"context"
 	"testing"
 	"time"
 
+	opt "github.com/mwdev22/grpclib/opts"
 	"google.golang.org/grpc"
 )
 
 func TestStartStop(t *testing.T) {
 	s := NewServer(
-		WithAddr(":0"),
-		WithReflection(true),
+		":0",
+		opt.WithReflection(true),
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
