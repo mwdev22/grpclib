@@ -8,6 +8,7 @@ import (
 	"github.com/mwdev22/grpclib/grpcctx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -84,6 +85,8 @@ func ClientRequestID() grpc.UnaryClientInterceptor {
 			requestID = fmt.Sprintf("%d", time.Now().UnixNano())
 		}
 
+		ctx = metadata.AppendToOutgoingContext(ctx, "x-request-id", requestID)
+
 		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }
@@ -153,6 +156,8 @@ func StreamClientRequestID() grpc.StreamClientInterceptor {
 		if requestID == "" {
 			requestID = fmt.Sprintf("%d", time.Now().UnixNano())
 		}
+
+		ctx = metadata.AppendToOutgoingContext(ctx, "x-request-id", requestID)
 
 		return streamer(ctx, desc, cc, method, opts...)
 	}

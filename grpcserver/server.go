@@ -26,7 +26,7 @@ type Server struct {
 }
 
 // constructs a Server with provided options
-func NewServer(host string, opts ...Option) *Server {
+func New(host string, opts ...Option) *Server {
 
 	o := Options{
 		ShutdownTimeout: 30 * time.Second,

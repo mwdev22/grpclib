@@ -9,7 +9,7 @@ import (
 )
 
 func TestStartStop(t *testing.T) {
-	s := NewServer(
+	s := New(
 		":0",
 		WithReflection(true),
 		WithShutdownTimeout(1*time.Second),

@@ -51,7 +51,7 @@ func (s *yourService) YourMethod(ctx context.Context, req *pb.Request) (*pb.Resp
 
 func main() {
     // create server with interceptors
-    srv := grpcserver.NewServer(
+    srv := grpcserver.New(
         ":8080",
         grpcserver.WithReflection(true),
         grpcserver.WithShutdownTimeout(10*time.Second),
@@ -140,7 +140,7 @@ Server wrapper with lifecycle management and service registration.
 ### creating a server
 
 ```go
-srv := grpcserver.NewServer(
+srv := grpcserver.New(
     ":8080",  // Address to listen on
     grpcserver.WithReflection(true),
     grpcserver.WithShutdownTimeout(30*time.Second),
@@ -366,7 +366,7 @@ func (s *service) YourMethod(ctx context.Context, req *pb.Request) (*pb.Response
 }
 
 func main() {
-    srv := grpcserver.NewServer(
+    srv := grpcserver.New(
         ":8080",
         grpcserver.WithReflection(true),
         grpcserver.WithShutdownTimeout(10*time.Second),
