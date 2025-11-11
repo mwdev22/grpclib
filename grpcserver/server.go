@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	opt "github.com/mwdev22/grpclib/opts"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -18,7 +17,8 @@ import (
 type Server struct {
 	grpcServer *grpc.Server
 	lis        net.Listener
-	opts       opt.Options
+	opts       Options
+	host       string
 
 	mu sync.Mutex
 	// registration functions to call before Serve
@@ -26,17 +26,16 @@ type Server struct {
 }
 
 // constructs a Server with provided options
-func NewServer(addr string, opts ...opt.Option) *Server {
+func NewServer(host string, opts ...Option) *Server {
 
-	o := opt.Options{
-		Addr: ":0",
+	o := Options{
+		ShutdownTimeout: 30 * time.Second,
 	}
 
 	for _, fn := range opts {
 		fn(&o)
 	}
 
-	// build grpc.Server options
 	var grpcOpts []grpc.ServerOption
 	if len(o.UnaryInterceptors) > 0 {
 		grpcOpts = append(grpcOpts, grpc.ChainUnaryInterceptor(o.UnaryInterceptors...))
@@ -52,6 +51,7 @@ func NewServer(addr string, opts ...opt.Option) *Server {
 	s := &Server{
 		grpcServer: grpc.NewServer(grpcOpts...),
 		opts:       o,
+		host:       host,
 	}
 
 	if o.EnableReflection {
@@ -71,17 +71,17 @@ func (s *Server) RegisterService(fn func(*grpc.Server)) {
 
 func (s *Server) Start(ctx context.Context) (string, error) {
 	s.mu.Lock()
-	addr := s.opts.Addr
+	registrants := s.registrants
 	s.mu.Unlock()
 
-	lis, err := net.Listen("tcp", addr)
+	lis, err := net.Listen("tcp", s.host)
 	if err != nil {
-		return "", fmt.Errorf("listen %s: %w", addr, err)
+		return "", fmt.Errorf("listen %s: %w", s.host, err)
 	}
 	s.lis = lis
 
 	// run registration functions
-	for _, reg := range s.registrants {
+	for _, reg := range registrants {
 		reg(s.grpcServer)
 	}
 
@@ -92,9 +92,25 @@ func (s *Server) Start(ctx context.Context) (string, error) {
 	return lis.Addr().String(), nil
 }
 
+func (s *Server) Addr() string {
+	if s.lis == nil {
+		return ""
+	}
+	return s.lis.Addr().String()
+}
+
+// returns the underlying *grpc.Server for advanced use cases.
+func (s *Server) GRPCServer() *grpc.Server {
+	return s.grpcServer
+}
+
 func (s *Server) Stop(ctx context.Context) error {
 	if s == nil || s.grpcServer == nil {
 		return errors.New("server not running")
+	}
+
+	if s.lis == nil {
+		return errors.New("server not started")
 	}
 
 	done := make(chan struct{})
