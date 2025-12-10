@@ -11,12 +11,12 @@ func TestPool(t *testing.T) {
 	pool, err := NewPool(
 		ctx,
 		3,
-		WithTarget("localhost:50051"),
+		"localhost:50051",
 		WithInsecure(),
 	)
 
 	if err != nil {
-		t.Fatalf("failed to create pool: %v", err)
+		t.Fatalf("familed to create pool: %v", err)
 	}
 	defer pool.Close()
 

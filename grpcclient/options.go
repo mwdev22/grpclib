@@ -9,7 +9,7 @@ import (
 )
 
 type Options struct {
-	Target string
+	Addr string
 
 	Creds credentials.TransportCredentials
 
@@ -34,10 +34,6 @@ type Options struct {
 }
 
 type Option func(*Options)
-
-func WithTarget(target string) Option {
-	return func(o *Options) { o.Target = target }
-}
 
 func WithCredentials(creds credentials.TransportCredentials) Option {
 	return func(o *Options) { o.Creds = creds }

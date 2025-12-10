@@ -16,7 +16,7 @@ type Client struct {
 	opts Options
 }
 
-func NewClient(ctx context.Context, opts ...Option) (*Client, error) {
+func New(ctx context.Context, addr string, opts ...Option) (*Client, error) {
 	options := Options{
 		DialTimeout:      5 * time.Second,
 		KeepAliveTime:    30 * time.Second,
@@ -31,9 +31,11 @@ func NewClient(ctx context.Context, opts ...Option) (*Client, error) {
 		opt(&options)
 	}
 
-	if options.Target == "" {
+	if addr == "" {
 		return nil, fmt.Errorf("target address is required")
 	}
+
+	options.Addr = addr
 
 	var dialOpts []grpc.DialOption
 
@@ -68,9 +70,9 @@ func NewClient(ctx context.Context, opts ...Option) (*Client, error) {
 	dialCtx, cancel := context.WithTimeout(ctx, options.DialTimeout)
 	defer cancel()
 
-	conn, err := grpc.DialContext(dialCtx, options.Target, dialOpts...)
+	conn, err := grpc.DialContext(dialCtx, options.Addr, dialOpts...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to dial %s: %w", options.Target, err)
+		return nil, fmt.Errorf("failed to dial %s: %w", options.Addr, err)
 	}
 
 	return &Client{

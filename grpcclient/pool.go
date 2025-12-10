@@ -21,7 +21,7 @@ type PoolOptions struct {
 	ClientOptions []Option
 }
 
-func NewPool(ctx context.Context, size int, opts ...Option) (*Pool, error) {
+func NewPool(ctx context.Context, size int, addr string, opts ...Option) (*Pool, error) {
 	if size <= 0 {
 		size = 1
 	}
@@ -31,7 +31,7 @@ func NewPool(ctx context.Context, size int, opts ...Option) (*Pool, error) {
 	}
 
 	for i := 0; i < size; i++ {
-		client, err := NewClient(ctx, opts...)
+		client, err := New(ctx, addr, opts...)
 		if err != nil {
 			pool.Close()
 			return nil, fmt.Errorf("failed to create client %d: %w", i, err)
