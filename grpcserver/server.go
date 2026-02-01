@@ -21,7 +21,6 @@ type Server struct {
 	host       string
 
 	mu sync.Mutex
-	// registration functions to call before Serve
 	registrants []func(*grpc.Server)
 }
 
@@ -61,8 +60,6 @@ func New(host string, opts ...Option) *Server {
 	return s
 }
 
-// registers a function that receives the underlying *grpc.Server and performs generated registration.
-// example: s.RegisterService(func(gs *grpc.Server) { svc.RegistryService(gs, impl) })
 func (s *Server) RegisterService(fn func(*grpc.Server)) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -99,7 +96,6 @@ func (s *Server) Addr() string {
 	return s.lis.Addr().String()
 }
 
-// returns the underlying *grpc.Server for advanced use cases.
 func (s *Server) GRPCServer() *grpc.Server {
 	return s.grpcServer
 }
@@ -136,7 +132,6 @@ func (s *Server) Stop(ctx context.Context) error {
 	}
 }
 
-// returns a grpc.DialOption appropriate for tests/clients against this server.
 func (s *Server) DialOptionForClient() (grpc.DialOption, error) {
 	if s == nil {
 		return nil, errors.New("server is nil")

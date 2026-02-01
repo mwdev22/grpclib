@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-// pool of client connections for scaling
 type Pool struct {
 	clients []*Client
 	current uint64
@@ -42,7 +41,6 @@ func NewPool(ctx context.Context, size int, addr string, opts ...Option) (*Pool,
 	return pool, nil
 }
 
-// select a client using round-robin
 func (p *Pool) Get() *Client {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -80,7 +78,6 @@ func (p *Pool) GetHealthy() *Client {
 	return nil
 }
 
-// returns the number of connections in the pool
 func (p *Pool) Size() int {
 	p.mu.RLock()
 	defer p.mu.RUnlock()

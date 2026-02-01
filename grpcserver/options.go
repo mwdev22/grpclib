@@ -24,12 +24,10 @@ func WithCreds(creds credentials.TransportCredentials) Option {
 	return func(o *Options) { o.Creds = creds }
 }
 
-// appends unary interceptors
 func WithUnaryInterceptors(i ...grpc.UnaryServerInterceptor) Option {
 	return func(o *Options) { o.UnaryInterceptors = append(o.UnaryInterceptors, i...) }
 }
 
-// appends stream interceptors
 func WithStreamInterceptors(i ...grpc.StreamServerInterceptor) Option {
 	return func(o *Options) { o.StreamInterceptors = append(o.StreamInterceptors, i...) }
 }

@@ -55,3 +55,105 @@ func TestPoolHealthCheck(t *testing.T) {
 		t.Errorf("expected 0 healthy connections, got %d", healthy)
 	}
 }
+
+func TestNewPool_ZeroSize(t *testing.T) {
+	t.Skip("requires network access")
+
+	ctx := context.Background()
+	pool, err := NewPool(ctx, 0, "localhost:9999", WithInsecure())
+
+	if err == nil {
+		defer pool.Close()
+		if pool.Size() != 1 {
+			t.Errorf("expected pool size to default to 1, got %d", pool.Size())
+		}
+	}
+}
+
+func TestNewPool_NegativeSize(t *testing.T) {
+	t.Skip("requires network access")
+
+	ctx := context.Background()
+	pool, err := NewPool(ctx, -5, "localhost:9999", WithInsecure())
+
+	if err == nil {
+		defer pool.Close()
+		if pool.Size() != 1 {
+			t.Errorf("expected pool size to default to 1, got %d", pool.Size())
+		}
+	}
+}
+
+func TestPool_GetConn(t *testing.T) {
+	pool := &Pool{
+		clients: []*Client{
+			{conn: nil},
+		},
+	}
+
+	conn := pool.GetConn()
+	if conn != nil {
+		t.Error("expected nil connection from GetConn")
+	}
+}
+
+func TestPool_GetConn_EmptyPool(t *testing.T) {
+	pool := &Pool{
+		clients: []*Client{},
+	}
+
+	conn := pool.GetConn()
+	if conn != nil {
+		t.Error("expected nil connection from empty pool")
+	}
+}
+
+func TestPool_Get_EmptyPool(t *testing.T) {
+	pool := &Pool{
+		clients: []*Client{},
+	}
+
+	client := pool.Get()
+	if client != nil {
+		t.Error("expected nil client from empty pool")
+	}
+}
+
+func TestPool_GetHealthy_NoHealthyClients(t *testing.T) {
+	pool := &Pool{
+		clients: []*Client{
+			{conn: nil},
+			{conn: nil},
+		},
+	}
+
+	client := pool.GetHealthy()
+	if client != nil {
+		t.Error("expected nil when no healthy clients available")
+	}
+}
+
+func TestPool_Close_EmptyPool(t *testing.T) {
+	pool := &Pool{
+		clients: []*Client{},
+	}
+
+	err := pool.Close()
+	if err != nil {
+		t.Errorf("expected no error closing empty pool, got %v", err)
+	}
+}
+
+func TestPool_Close_NilClients(t *testing.T) {
+	pool := &Pool{
+		clients: []*Client{
+			{conn: nil},
+			{conn: nil},
+		},
+	}
+
+	err := pool.Close()
+	if err != nil {
+		t.Errorf("expected no error closing pool with nil connections, got %v", err)
+	}
+}

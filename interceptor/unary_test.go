@@ -167,7 +167,6 @@ func TestValidation(t *testing.T) {
 		FullMethod: "/test.Service/Method",
 	}
 
-	// Test with invalid request
 	_, err := interceptor(context.Background(), &validatableRequest{value: ""}, info, handler)
 
 	if err == nil {
@@ -183,7 +182,6 @@ func TestValidation(t *testing.T) {
 		t.Errorf("expected InvalidArgument code, got %v", st.Code())
 	}
 
-	// Test with valid request
 	resp, err := interceptor(context.Background(), &validatableRequest{value: "valid"}, info, handler)
 
 	if err != nil {

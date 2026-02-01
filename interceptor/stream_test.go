@@ -232,12 +232,10 @@ func TestWrappedServerStream(t *testing.T) {
 		ctx:          newCtx,
 	}
 
-	// Test that Context() returns the wrapped context
 	if wrapped.Context() != newCtx {
 		t.Error("expected wrapped context to be returned")
 	}
 
-	// Verify the value is accessible
 	if val := wrapped.Context().Value("test-key"); val != "test-value" {
 		t.Errorf("expected 'test-value', got %v", val)
 	}
