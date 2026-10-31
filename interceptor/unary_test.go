@@ -2,6 +2,9 @@ package interceptor
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -22,7 +25,7 @@ func (m *mockLogger) Info(msg string, args ...interface{}) {
 }
 
 func (m *mockLogger) Error(msg string, args ...interface{}) {
-	m.errors = append(m.errors, msg)
+	m.errors = append(m.errors, fmt.Sprintf(msg, args...))
 }
 
 func (m *mockLogger) Warn(msg string, args ...interface{}) {
@@ -89,6 +92,69 @@ func TestRecovery(t *testing.T) {
 
 	if len(logger.errors) != 1 {
 		t.Errorf("expected 1 error log, got %d", len(logger.errors))
+	}
+}
+
+func TestRecovery_HidesPanicValue(t *testing.T) {
+	tests := []struct {
+		name       string
+		panicValue any
+		stream     bool
+	}{
+		{name: "unary string panic", panicValue: "db password=hunter2", stream: false},
+		{name: "unary error panic", panicValue: errors.New("dial tcp 10.0.0.5:5432"), stream: false},
+		{name: "stream string panic", panicValue: "db password=hunter2", stream: true},
+		{name: "stream error panic", panicValue: errors.New("dial tcp 10.0.0.5:5432"), stream: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger := &mockLogger{}
+			var err error
+			if tt.stream {
+				handler := func(srv any, stream grpc.ServerStream) error {
+					panic(tt.panicValue)
+				}
+				info := &grpc.StreamServerInfo{
+					FullMethod: "/test.Service/StreamMethod",
+				}
+				err = StreamRecovery(logger)(nil, &mockServerStream{}, info, handler)
+			} else {
+				handler := func(ctx context.Context, req any) (any, error) {
+					panic(tt.panicValue)
+				}
+				info := &grpc.UnaryServerInfo{
+					FullMethod: "/test.Service/Method",
+				}
+				_, err = Recovery(logger)(context.Background(), "request", info, handler)
+			}
+
+			st, ok := status.FromError(err)
+			if !ok {
+				t.Fatalf("expected gRPC status error, got %v", err)
+			}
+			if st.Code() != codes.Internal {
+				t.Errorf("expected Internal code, got %v", st.Code())
+			}
+			if st.Message() != "internal server error" {
+				t.Errorf("expected generic message, got %q", st.Message())
+			}
+
+			panicStr := fmt.Sprint(tt.panicValue)
+			if strings.Contains(err.Error(), panicStr) {
+				t.Errorf("client error leaks panic value: %q", err.Error())
+			}
+
+			if len(logger.errors) != 1 {
+				t.Fatalf("expected 1 error log, got %d", len(logger.errors))
+			}
+			if !strings.Contains(logger.errors[0], panicStr) {
+				t.Errorf("expected log to contain panic value %q, got %q", panicStr, logger.errors[0])
+			}
+			if !strings.Contains(logger.errors[0], "goroutine") {
+				t.Errorf("expected log to contain stack trace, got %q", logger.errors[0])
+			}
+		})
 	}
 }
 

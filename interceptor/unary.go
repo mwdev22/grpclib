@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"runtime/debug"
 	"time"
 
 	"github.com/mwdev22/grpclib/grpcctx"
@@ -65,8 +66,8 @@ func Recovery(logger Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		defer func() {
 			if r := recover(); r != nil {
-				logger.Error("panic recovered: method=%s panic=%v", info.FullMethod, r)
-				err = status.Errorf(codes.Internal, "internal server error: %v", r)
+				logger.Error("panic recovered: method=%s panic=%v\n%s", info.FullMethod, r, debug.Stack())
+				err = status.Error(codes.Internal, "internal server error")
 			}
 		}()
 

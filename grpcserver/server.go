@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mwdev22/grpclib/interceptor"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -20,7 +21,7 @@ type Server struct {
 	opts       Options
 	host       string
 
-	mu sync.Mutex
+	mu          sync.Mutex
 	registrants []func(*grpc.Server)
 }
 
@@ -33,6 +34,9 @@ func New(host string, opts ...Option) *Server {
 
 	for _, fn := range opts {
 		fn(&o)
+	}
+	if o.Logger == nil {
+		o.Logger = interceptor.DefaultLogger
 	}
 
 	var grpcOpts []grpc.ServerOption
@@ -83,7 +87,10 @@ func (s *Server) Start(ctx context.Context) (string, error) {
 	}
 
 	go func() {
-		_ = s.grpcServer.Serve(lis)
+		// ErrServerStopped means Stop won the race with Serve, not a failure
+		if err := s.grpcServer.Serve(lis); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
+			s.opts.Logger.Error("grpc serve %s: %v", s.host, err)
+		}
 	}()
 
 	return lis.Addr().String(), nil

@@ -3,6 +3,7 @@ package grpcserver
 import (
 	"time"
 
+	"github.com/mwdev22/grpclib/interceptor"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -18,6 +19,8 @@ type Options struct {
 	ShutdownTimeout time.Duration
 
 	EnableReflection bool
+
+	Logger interceptor.Logger
 }
 
 func WithCreds(creds credentials.TransportCredentials) Option {
@@ -38,4 +41,8 @@ func WithShutdownTimeout(d time.Duration) Option {
 
 func WithReflection(enabled bool) Option {
 	return func(o *Options) { o.EnableReflection = enabled }
+}
+
+func WithLogger(l interceptor.Logger) Option {
+	return func(o *Options) { o.Logger = l }
 }
