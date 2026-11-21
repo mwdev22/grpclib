@@ -87,7 +87,6 @@ func (s *Server) Start(ctx context.Context) (string, error) {
 	}
 
 	go func() {
-		// ErrServerStopped means Stop won the race with Serve, not a failure
 		if err := s.grpcServer.Serve(lis); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
 			s.opts.Logger.Error("grpc serve %s: %v", s.host, err)
 		}
