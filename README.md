@@ -156,6 +156,7 @@ srv := grpcserver.New(
 - `WithUnaryInterceptors(...interceptors)` - Add unary interceptors
 - `WithStreamInterceptors(...interceptors)` - Add stream interceptors
 - `WithCreds(credentials)` - Set transport credentials (TLS)
+- `WithLogger(interceptor.Logger)` - Logger for background `Serve` failures (default: `interceptor.DefaultLogger`)
 
 ### server methods
 

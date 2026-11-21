@@ -3,6 +3,7 @@ package interceptor
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"time"
 
 	"github.com/mwdev22/grpclib/grpcctx"
@@ -47,8 +48,8 @@ func StreamRecovery(logger Logger) grpc.StreamServerInterceptor {
 	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		defer func() {
 			if r := recover(); r != nil {
-				logger.Error("panic recovered in stream: method=%s panic=%v", info.FullMethod, r)
-				err = status.Errorf(codes.Internal, "internal server error: %v", r)
+				logger.Error("panic recovered in stream: method=%s panic=%v\n%s", info.FullMethod, r, debug.Stack())
+				err = status.Error(codes.Internal, "internal server error")
 			}
 		}()
 

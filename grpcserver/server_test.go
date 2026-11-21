@@ -2,6 +2,8 @@ package grpcserver
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -224,5 +226,65 @@ func TestServer_MultipleRegister(t *testing.T) {
 
 	if callCount != 2 {
 		t.Errorf("expected both registrants to be called, got %d calls", callCount)
+	}
+}
+
+type recordLogger struct {
+	mu     sync.Mutex
+	errors []string
+}
+
+func (l *recordLogger) Info(msg string, args ...interface{}) {}
+
+func (l *recordLogger) Warn(msg string, args ...interface{}) {}
+
+func (l *recordLogger) Error(msg string, args ...interface{}) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.errors = append(l.errors, fmt.Sprintf(msg, args...))
+}
+
+func (l *recordLogger) count() int {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return len(l.errors)
+}
+
+func TestServer_ServeErrorLogged(t *testing.T) {
+	tests := []struct {
+		name    string
+		stop    func(srv *Server) error
+		wantLog bool
+	}{
+		{name: "listener failure is logged", stop: func(srv *Server) error { return srv.lis.Close() }, wantLog: true},
+		{name: "graceful stop is not logged", stop: func(srv *Server) error { return srv.Stop(context.Background()) }, wantLog: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger := &recordLogger{}
+			srv := New(":0", WithLogger(logger))
+
+			if _, err := srv.Start(context.Background()); err != nil {
+				t.Fatalf("failed to start: %v", err)
+			}
+			if err := tt.stop(srv); err != nil {
+				t.Fatalf("stop: %v", err)
+			}
+
+			wait := 100 * time.Millisecond
+			if tt.wantLog {
+				wait = 2 * time.Second
+			}
+			deadline := time.Now().Add(wait)
+			for time.Now().Before(deadline) && logger.count() == 0 {
+				time.Sleep(10 * time.Millisecond)
+			}
+
+			if got := logger.count() > 0; got != tt.wantLog {
+				t.Errorf("serve error logged = %v, want %v", got, tt.wantLog)
+			}
+			srv.GRPCServer().Stop()
+		})
 	}
 }
